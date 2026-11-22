@@ -1,0 +1,11 @@
+.git
+.env
+.env.*
+backups
+tmp
+output
+**/__pycache__
+**/*.log
+**/*.pem
+**/*.key
+.ssh

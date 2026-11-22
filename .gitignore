@@ -1,0 +1,19 @@
+.env
+.env.*
+!.env.example
+!.env.admin.example
+backups/
+tmp/
+*.log
+__pycache__/
+# Archivos de operación específicos del equipo de la empresa.
+*.local.*
+deploy/apache-alias.conf
+docs/publicacion-local.md
+docs/phpmyadmin.md
+docs/evidencias-bd.json
+output/
+# Claves y configuraciones privadas adicionales.
+*.pem
+*.key
+.ssh/
