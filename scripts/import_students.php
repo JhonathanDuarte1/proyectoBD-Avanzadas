@@ -16,6 +16,6 @@ try{
   if(!$row['codigo']||!$row['nombre']||mb_strlen($row['codigo'])>30||mb_strlen($row['nombre'])>150||strlen($row['correo'])>180||!filter_var($row['correo'],FILTER_VALIDATE_EMAIL))throw new RuntimeException('Fila invalida: '.$line);
   $batch[]=$row;
  }fclose($handle);
- call_procedure('sp_importar_estudiantes',[$actor,json_encode($batch,JSON_THROW_ON_ERROR|JSON_UNESCAPED_UNICODE)]);
+ importar_estudiantes($actor,$batch);
  echo count($batch)." estudiantes cargados en una sola transaccion. Un error revierte el lote completo.\n";
 }catch(Throwable $e){fwrite(STDERR,$e->getMessage()."\n");exit(1);}

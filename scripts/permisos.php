@@ -7,7 +7,9 @@ try{
  $webRole='iu_web_'.$suffix;$readRole='iu_lectura_'.$suffix;$webUser='iu_app_'.$suffix;$readUser='iu_report_'.$suffix;
  foreach([$webRole,$readRole] as $role)run('CREATE ROLE IF NOT EXISTS '.db()->quote($role));
  run('GRANT SELECT ON `'.$name.'`.* TO '.db()->quote($webRole));
- foreach(['sp_guardar','sp_eliminar','sp_cuenta','sp_usuario','sp_presupuesto_usuario','sp_importar_estudiantes'] as $proc)run('GRANT EXECUTE ON PROCEDURE `'.$name.'`.`'.$proc.'` TO '.db()->quote($webRole));
+ foreach(['grupos','profesores','titulos','usuarios','proyectos','participaciones','estudiantes','estudiante_proyecto'] as $table)run('GRANT INSERT,UPDATE ON `'.$name.'`.`'.$table.'` TO '.db()->quote($webRole));
+ foreach(['proyectos','estudiante_proyecto'] as $table)run('GRANT DELETE ON `'.$name.'`.`'.$table.'` TO '.db()->quote($webRole));
+ run('GRANT EXECUTE ON PROCEDURE `'.$name.'`.`sp_presupuesto` TO '.db()->quote($webRole));
  foreach(['v_proyectos','v_profesores','v_participaciones','v_cartera_proyectos','v_resumen_facultad','sedes','areas','facultades','grupos'] as $view)run('GRANT SELECT ON `'.$name.'`.`'.$view.'` TO '.db()->quote($readRole));
  $configs=[];
  foreach([[$webUser,$webRole],[$readUser,$readRole]] as [$user,$role]){
