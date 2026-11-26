@@ -14,13 +14,13 @@ function process_post(?array $u,string $page,array $entities): void {
  assert_csrf();$action=$_POST['action']??'';
  if($action==='login'){
   if(($_SESSION['login_wait']??0)>time())throw new RuntimeException('Espera un minuto antes de volver a intentar.');
-  $account=rows('SELECT * FROM usuarios WHERE correo=?',[trim($_POST['correo']??'')])[0]??null;
+  $account=rows('SELECT * FROM ('.consulta_entidad('usuarios').') cuentas WHERE correo=?',[trim($_POST['correo']??'')])[0]??null;
   if(!$account||!password_verify($_POST['password']??'',$account['clave_hash'])){
    $_SESSION['login_tries']=($_SESSION['login_tries']??0)+1;
    if($_SESSION['login_tries']>=5){$_SESSION['login_wait']=time()+60;$_SESSION['login_tries']=0;}
    throw new RuntimeException('Correo o contraseña incorrectos.');
   }
-  if($account['rol']==='DECANO'&&!rows('SELECT f.id FROM facultades f JOIN profesores p ON p.id=f.decano_id JOIN grupos g ON g.id=p.grupo_id WHERE f.decano_id=? AND g.facultad_id=f.id',[$account['profesor_id']]))throw new RuntimeException('La cuenta no tiene un decanato vigente.');
+  if(!datos_usuario((int)$account['id']))throw new RuntimeException('La cuenta no tiene una facultad o un decanato vigente.');
   session_regenerate_id(true);$_SESSION['csrf']=bin2hex(random_bytes(32));$_SESSION['uid']=$account['id'];$_SESSION['login_tries']=0;redirect('/');
  }
  if(!$u)throw new RuntimeException('Inicia sesión.');
@@ -32,7 +32,7 @@ function process_post(?array $u,string $page,array $entities): void {
   if(!filter_var($mail,FILTER_VALIDATE_EMAIL)||strlen($mail)>180)throw new ErrorFormulario('Ingresa un correo válido con máximo 180 caracteres.','correo');
   unico('usuarios','correo',$mail,(int)$u['id'],'El correo ya está registrado.','correo');
   unico('profesores','cedula',$cedula,(int)$u['profesor_id'],'La cédula ya está registrada.','cedula');
-  $old=rows('SELECT clave_hash FROM usuarios WHERE id=?',[$u['id']])[0];
+  $old=registro_entidad('usuarios',(int)$u['id']);
   if(!password_verify($_POST['actual']??'',$old['clave_hash']))throw new ErrorFormulario('La contraseña actual no es correcta.','actual');
   $password=$_POST['nueva']??'';if($password!==''&&(strlen($password)<10||strlen($password)>72))throw new ErrorFormulario('La nueva contraseña debe tener entre 10 y 72 bytes.','nueva');
   actualizar_cuenta((int)$u['id'],$cedula,$name,$mail,$password!==''?password_hash($password,PASSWORD_DEFAULT):$old['clave_hash']);
@@ -49,7 +49,7 @@ function process_post(?array $u,string $page,array $entities): void {
  }else{
   if(!isset($entities[$page])||!writable($page,$u))throw new RuntimeException('No tienes permiso para esta operación.');
   $id=filter_var($_POST['id']??0,FILTER_VALIDATE_INT);if($id===false||$id<0)throw new RuntimeException('Identificador inválido.');
-  $existing=$id?(rows("SELECT * FROM `$page` WHERE id=?",[$id])[0]??null):null;
+  $existing=$id?registro_entidad($page,(int)$id):null;
   if($id&&(!$existing||!can_edit($page,$existing,$u)))throw new RuntimeException('Registro fuera de tu ámbito de edición.');
   if($action==='delete'){
    if(!$id)throw new RuntimeException('Selecciona un registro.');
@@ -59,7 +59,7 @@ function process_post(?array $u,string $page,array $entities): void {
    foreach($fields as $key=>$field){
     $val=trim((string)($_POST[$key]??''));$optional=$field[3]??false;
     if($val===''&&!$optional)throw new ErrorFormulario('Completa: '.$field[0],$key);
-    $max=['codigo'=>30,'cedula'=>20,'correo'=>180,'nombre'=>$page==='proyectos'||$page==='titulos'?180:150,'titulo_inicial'=>180][$key]??180;
+    $max=['codigo'=>30,'cedula'=>20,'correo'=>180,'nombre'=>$page==='proyectos'||$page==='titulos'?180:150,'titulo_inicial'=>180,'area_interes'=>120][$key]??180;
     if(mb_strlen($val)>$max)throw new ErrorFormulario($field[0].': máximo '.$max.' caracteres.',$key);
     if($field[1]==='select'&&!in_array($val,array_map('strval',array_column(options($field[2],$u),'id')),true))throw new ErrorFormulario('Selección no permitida: '.$field[0].'. Elige una opción disponible de tu facultad.',$key);
     if($field[1]==='email'&&!filter_var($val,FILTER_VALIDATE_EMAIL))throw new ErrorFormulario('Ingresa un correo válido.',$key);

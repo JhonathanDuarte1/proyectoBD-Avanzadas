@@ -1,5 +1,6 @@
 .env
 .env.*
+.mantenimiento
 !.env.example
 !.env.admin.example
 backups/

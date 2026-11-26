@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 date_default_timezone_set('America/Bogota');
+require_once __DIR__.'/datos.php';
 $envFile=getenv('APP_ENV_FILE')?:__DIR__.'/../.env';
 foreach (is_file($envFile) ? file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) : [] as $line) {
     if (strpos(trim($line),'#')===0 || strpos($line,'=')===false) continue;
@@ -34,11 +35,7 @@ function valor_formulario(string $campo,$valor='') {
  if($_SERVER['REQUEST_METHOD']==='POST'&&is_string($_POST[$campo]??null))return $_POST[$campo];
  return $valor;
 }
-function user(): ?array {
- if(!isset($_SESSION['uid']))return null;
- $result=rows("SELECT u.id,u.profesor_id,u.correo,u.rol,p.cedula,p.nombre,p.grupo_id,g.facultad_id FROM usuarios u JOIN profesores p ON p.id=u.profesor_id JOIN grupos g ON g.id=p.grupo_id WHERE u.id=? AND (u.rol<>'DECANO' OR EXISTS(SELECT 1 FROM facultades f WHERE f.id=g.facultad_id AND f.decano_id=p.id))",[$_SESSION['uid']])[0]??null;
- return $result&&$result['facultad_id']!==null?$result:null;
-}
+function user(): ?array {return isset($_SESSION['uid'])?datos_usuario((int)$_SESSION['uid']):null;}
 function csrf(): string { return '<input type="hidden" name="csrf" value="'.h($_SESSION['csrf']).'">'; }
 function assert_csrf(): void { if(!hash_equals($_SESSION['csrf'],(string)($_POST['csrf']??''))) throw new RuntimeException('La sesión del formulario venció. Intenta de nuevo.'); }
 if (PHP_SAPI!=='cli') {
